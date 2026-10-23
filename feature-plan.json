@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "current_feature": "signal-processing-engine",
+  "features": [
+    {
+      "id": "core-skeleton",
+      "title": "Core FastAPI/React Skeleton with Health Check",
+      "status": "done",
+      "acceptance": [
+        "FastAPI backend runs on port 8000 with /health endpoint",
+        "React + TypeScript + Vite frontend runs on port 5173",
+        "Docker Compose with backend, frontend, and Keycloak services",
+        "Backend tests with pytest (at least 3 tests)",
+        "Frontend typecheck and build pass"
+      ],
+      "implementation": [
+        "backend/app/main.py",
+        "backend/app/api/health.py",
+        "backend/requirements.txt",
+        "backend/Dockerfile",
+        "frontend/package.json",
+        "frontend/src/main.tsx",
+        "frontend/src/App.tsx",
+        "frontend/vite.config.ts",
+        "compose.yaml",
+        ".env.example"
+      ],
+      "tests": [
+        "backend/tests/test_health.py",
+        "frontend/src/App.test.tsx"
+      ]
+    },
+    {
+      "id": "signal-processing-engine",
+      "title": "Signal Processing Domain Engine",
+      "status": "planned",
+      "acceptance": [
+        "REST API for creating, listing, and processing signals",
+        "Signal generation (sine, square, sawtooth, noise)",
+        "Signal operations (FFT, filtering, convolution)",
+        "Persistent SQLite storage with audit log"
+      ],
+      "implementation": [
+        "backend/app/models/signal.py",
+        "backend/app/services/signal_service.py",
+        "backend/app/api/signals.py",
+        "backend/app/core/database.py"
+      ],
+      "tests": [
+        "backend/tests/test_signal_service.py",
+        "backend/tests/test_signals_api.py"
+      ]
+    },
+    {
+      "id": "signal-workflows",
+      "title": "Three Core User Workflows",
+      "status": "planned",
+      "acceptance": [
+        "Workflow 1: Generate and visualize a signal",
+        "Workflow 2: Apply filter and compare before/after",
+        "Workflow 3: Export signal data as CSV/JSON"
+      ],
+      "implementation": [
+        "frontend/src/components/SignalGenerator.tsx",
+        "frontend/src/components/SignalVisualizer.tsx",
+        "frontend/src/components/SignalProcessor.tsx",
+        "frontend/src/components/SignalExporter.tsx",
+        "frontend/src/api/client.ts"
+      ],
+      "tests": [
+        "frontend/src/components/SignalGenerator.test.tsx",
+        "frontend/src/components/SignalProcessor.test.tsx"
+      ]
+    },
+    {
+      "id": "auth-oidc",
+      "title": "OIDC Authentication with Keycloak",
+      "status": "planned",
+      "acceptance": [
+        "Keycloak realm configuration",
+        "Backend session management with HttpOnly cookies",
+        "Frontend login/logout flow",
+        "Protected API endpoints"
+      ],
+      "implementation": [
+        "backend/app/core/auth.py",
+        "backend/app/api/auth.py",
+        "backend/app/core/security.py",
+        "keycloak/realm-export.json",
+        "frontend/src/components/Login.tsx",
+        "frontend/src/contexts/AuthContext.tsx"
+      ],
+      "tests": [
+        "backend/tests/test_auth.py"
+      ]
+    },
+    {
+      "id": "llm-integration",
+      "title": "LLM Advisory Explanations",
+      "status": "planned",
+      "acceptance": [
+        "Optional LLM explanations for signal operations",
+        "Support for OpenAI-compatible, Anthropic, Gemini, Ollama",
+        "Provider configuration via environment variables",
+        "Clear advisory labeling and error handling"
+      ],
+      "implementation": [
+        "backend/app/services/llm_service.py",
+        "backend/app/api/llm.py",
+        "backend/app/core/llm_providers.py"
+      ],
+      "tests": [
+        "backend/tests/test_llm_service.py"
+      ]
+    },
+    {
+      "id": "documentation",
+      "title": "Documentation and Packaging",
+      "status": "done",
+      "acceptance": [
+        "README with install/run/test steps and architecture diagram",
+        "CHANGELOG.md",
+        "portfolio.json",
+        "LICENSE",
+        "pyproject.toml",
+        "CI workflow"
+      ],
+      "implementation": [
+        "README.md",
+        "CHANGELOG.md",
+        "portfolio.json",
+        "LICENSE",
+        "pyproject.toml",
+        ".github/workflows/ci.yml"
+      ],
+      "tests": []
+    }
+  ]
+}

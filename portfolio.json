@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "signal-forge-144-alan-vo",
+  "owner": "ALANDVO",
+  "email": "alanvo@gmail.com",
+  "domain": "AI/ML developer tools",
+  "summary": "Work in progress: signal-forge-144-alan-vo",
+  "workflows": [
+    "Generate and visualize synthetic signals (sine, square, sawtooth, noise)",
+    "Apply filters and transformations with before/after comparison",
+    "Export signal data and analysis results as CSV/JSON"
+  ],
+  "auth": "oidc-keycloak-saml-broker",
+  "llm_providers": [
+    "openai-compatible",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "status": "work-in-progress"
+}
