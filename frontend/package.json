@@ -25,5 +25,10 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vitest": "^3.0.2"
+  },
+  "author": {
+    "name": "Alan Vo",
+    "email": "alanvo@gmail.com",
+    "url": "https://github.com/ALANDVO"
   }
 }
