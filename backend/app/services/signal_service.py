@@ -91,7 +91,7 @@ class SignalService:
             amplitude=signal_create.amplitude,
             phase=signal_create.phase,
             data=data,
-            metadata=signal_create.metadata,
+            signal_metadata=signal_create.metadata,
         )
         self.session.add(signal)
         await self.session.flush()
@@ -123,7 +123,7 @@ class SignalService:
     async def list_signals(self, skip: int = 0, limit: int = 100) -> list[SignalResponse]:
         """List signals with pagination."""
         result = await self.session.execute(
-            select(Signal).order_by(Signal.created_at.desc()).offset(skip).limit(limit)
+            select(Signal).offset(skip).limit(limit).order_by(Signal.created_at.desc())
         )
         signals = result.scalars().all()
         return [SignalResponse(s) for s in signals]
@@ -132,20 +132,30 @@ class SignalService:
         """Compute FFT of a signal."""
         start_time = time.perf_counter()
 
-        signal = await self.session.get(Signal, signal_id)
+        result = await self.session.execute(select(Signal).where(Signal.id == signal_id))
+        signal = result.scalar_one_or_none()
         if not signal:
-            raise ValueError(f"Signal {signal_id} not found")
+            raise ValueError("Signal not found")
 
-        input_data = signal.data
-        fft_result = np.fft.fft(input_data)
+        data = np.array(signal.data, dtype=np.float64)
+        n = len(data)
+
+        # Compute FFT
+        fft_result = np.fft.fft(data)
         magnitudes = np.abs(fft_result).tolist()
-        frequencies = np.fft.fftfreq(len(input_data), 1 / signal.sample_rate).tolist()
+        frequencies = np.fft.fftfreq(n, 1 / signal.sample_rate).tolist()
+        phases = np.angle(fft_result).tolist()
 
-        output_data = magnitudes
+        # Only keep positive frequencies
+        pos_mask = np.array(frequencies) >= 0
+        pos_frequencies = [f for f, m in zip(frequencies, pos_mask) if m]
+        pos_magnitudes = [m for m, mask in zip(magnitudes, pos_mask) if mask]
+        pos_phases = [p for p, mask in zip(phases, pos_mask) if mask]
 
         execution_time = (time.perf_counter() - start_time) * 1000
 
-        result_signal = Signal(
+        # Create FFT result signal
+        fft_signal = Signal(
             name=f"{signal.name} (FFT)",
             signal_type="fft",
             sample_rate=signal.sample_rate,
@@ -153,82 +163,89 @@ class SignalService:
             frequency=None,
             amplitude=1.0,
             phase=0.0,
-            data=output_data,
-            metadata={
+            data=pos_magnitudes,
+            signal_metadata={
                 "source_signal_id": signal.id,
-                "frequencies": frequencies,
-                "operation": "fft",
+                "frequencies": pos_frequencies,
+                "phases": pos_phases,
+                "original_length": n,
             },
         )
-        self.session.add(result_signal)
+        self.session.add(fft_signal)
         await self.session.flush()
 
         self._log_operation(
             signal_id=signal.id,
             operation_type="fft",
-            parameters={},
-            input_data=input_data,
-            output_data=output_data,
+            parameters={"output_signal_id": fft_signal.id},
+            input_data=signal.data,
+            output_data=pos_magnitudes,
             execution_time_ms=execution_time,
         )
 
         await self.session.commit()
-        await self.session.refresh(result_signal)
-        return SignalResponse(result_signal)
+        await self.session.refresh(fft_signal)
+        return SignalResponse(fft_signal)
 
     async def apply_filter(
         self,
         signal_id: int,
         filter_type: str,
         cutoff_freq: float,
-        order: int = 4,
+        order: int,
     ) -> SignalResponse:
         """Apply a digital filter to a signal."""
         start_time = time.perf_counter()
 
-        signal = await self.session.get(Signal, signal_id)
+        result = await self.session.execute(select(Signal).where(Signal.id == signal_id))
+        signal = result.scalar_one_or_none()
         if not signal:
-            raise ValueError(f"Signal {signal_id} not found")
+            raise ValueError("Signal not found")
 
-        from scipy import signal as scipy_signal
+        from scipy.signal import butter, filtfilt
 
-        input_data = signal.data
         nyquist = signal.sample_rate / 2
+        if cutoff_freq >= nyquist:
+            raise ValueError(f"Cutoff frequency must be less than Nyquist frequency ({nyquist} Hz)")
+
         normalized_cutoff = cutoff_freq / nyquist
 
         if filter_type == "lowpass":
-            b, a = scipy_signal.butter(order, normalized_cutoff, btype="low")
+            b, a = butter(order, normalized_cutoff, btype="low")
         elif filter_type == "highpass":
-            b, a = scipy_signal.butter(order, normalized_cutoff, btype="high")
+            b, a = butter(order, normalized_cutoff, btype="high")
         elif filter_type == "bandpass":
-            if not isinstance(cutoff_freq, (list, tuple)) or len(cutoff_freq) != 2:
-                raise ValueError("Bandpass requires [low, high] cutoff frequencies")
-            b, a = scipy_signal.butter(order, [c / nyquist for c in cutoff_freq], btype="band")
+            # For bandpass, cutoff_freq is treated as center frequency, bandwidth = cutoff_freq
+            low = max(0.001, (cutoff_freq - cutoff_freq / 2) / nyquist)
+            high = min(0.999, (cutoff_freq + cutoff_freq / 2) / nyquist)
+            if low >= high:
+                raise ValueError("Invalid bandpass frequency range")
+            b, a = butter(order, [low, high], btype="band")
         else:
             raise ValueError(f"Unknown filter type: {filter_type}")
 
-        output_data = scipy_signal.filtfilt(b, a, input_data).tolist()
+        data = np.array(signal.data, dtype=np.float64)
+        filtered_data = filtfilt(b, a, data).tolist()
 
         execution_time = (time.perf_counter() - start_time) * 1000
 
-        result_signal = Signal(
+        filtered_signal = Signal(
             name=f"{signal.name} ({filter_type})",
-            signal_type="filtered",
+            signal_type=f"filtered_{filter_type}",
             sample_rate=signal.sample_rate,
             duration=signal.duration,
             frequency=signal.frequency,
             amplitude=signal.amplitude,
             phase=signal.phase,
-            data=output_data,
-            metadata={
+            data=filtered_data,
+            signal_metadata={
                 "source_signal_id": signal.id,
                 "filter_type": filter_type,
                 "cutoff_freq": cutoff_freq,
                 "order": order,
-                "operation": "filter",
             },
         )
-        self.session.add(result_signal)
+        self.session.add(filtered_signal)
         await self.session.flush()
 
         self._log_operation(
@@ -238,69 +255,82 @@ class SignalService:
                 "filter_type": filter_type,
                 "cutoff_freq": cutoff_freq,
                 "order": order,
+                "output_signal_id": filtered_signal.id,
             },
-            input_data=input_data,
-            output_data=output_data,
+            input_data=signal.data,
+            output_data=filtered_data,
             execution_time_ms=execution_time,
         )
 
         await self.session.commit()
-        await self.session.refresh(result_signal)
-        return SignalResponse(result_signal)
+        await self.session.refresh(filtered_signal)
+        return SignalResponse(filtered_signal)
 
     async def convolve(self, signal_id: int, kernel_id: int) -> SignalResponse:
         """Convolve two signals."""
         start_time = time.perf_counter()
 
-        signal = await self.session.get(Signal, signal_id)
-        kernel = await self.session.get(Signal, kernel_id)
-        if not signal or not kernel:
-            raise ValueError("Signal or kernel not found")
+        result = await self.session.execute(select(Signal).where(Signal.id == signal_id))
+        signal = result.scalar_one_or_none()
+        if not signal:
+            raise ValueError("Signal not found")
+
+        result = await self.session.execute(select(Signal).where(Signal.id == kernel_id))
+        kernel = result.scalar_one_or_none()
+        if not kernel:
+            raise ValueError("Kernel signal not found")
 
         if signal.sample_rate != kernel.sample_rate:
-            raise ValueError("Sample rates must match for convolution")
+            raise ValueError("Signals must have the same sample rate for convolution")
 
-        input_data = signal.data
-        kernel_data = kernel.data
-        output_data = np.convolve(input_data, kernel_data, mode="same").tolist()
+        data = np.array(signal.data, dtype=np.float64)
+        kernel_data = np.array(kernel.data, dtype=np.float64)
+
+        # Full convolution
+        convolved_data = np.convolve(data, kernel_data, mode="full").tolist()
+        # Duration of convolved signal
+        convolved_duration = len(convolved_data) / signal.sample_rate
 
         execution_time = (time.perf_counter() - start_time) * 1000
 
-        result_signal = Signal(
+        convolved_signal = Signal(
             name=f"{signal.name} * {kernel.name}",
             signal_type="convolved",
             sample_rate=signal.sample_rate,
-            duration=signal.duration,
-            frequency=signal.frequency,
-            amplitude=signal.amplitude,
-            phase=signal.phase,
-            data=output_data,
-            metadata={
+            duration=convolved_duration,
+            frequency=None,
+            amplitude=1.0,
+            phase=0.0,
+            data=convolved_data,
+            signal_metadata={
                 "source_signal_id": signal.id,
                 "kernel_signal_id": kernel.id,
-                "operation": "convolution",
             },
         )
-        self.session.add(result_signal)
+        self.session.add(convolved_signal)
         await self.session.flush()
 
         self._log_operation(
             signal_id=signal.id,
             operation_type="convolution",
-            parameters={"kernel_signal_id": kernel.id},
-            input_data=input_data,
-            output_data=output_data,
+            parameters={
+                "kernel_signal_id": kernel.id,
+                "output_signal_id": convolved_signal.id,
+            },
+            input_data=signal.data,
+            output_data=convolved_data,
             execution_time_ms=execution_time,
         )
 
         await self.session.commit()
-        await self.session.refresh(result_signal)
-        return SignalResponse(result_signal)
+        await self.session.refresh(convolved_signal)
+        return SignalResponse(convolved_signal)
 
     async def get_operations(self, signal_id: int) -> list[SignalOperationResponse]:
         """Get operation history for a signal."""
         result = await self.session.execute(
-            select(SignalOperation).where(SignalOperation.signal_id == signal_id).order_by(SignalOperation.created_at.desc())
+            select(SignalOperation).where(SignalOperation.signal_id == signal_id).order_by(SignalOperation.created_at)
         )
         operations = result.scalars().all()
         return [SignalOperationResponse(op) for op in operations]
+

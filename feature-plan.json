@@ -5,9 +5,30 @@
     {
       "id": "continue-implementation",
       "title": "Continue implementation and resolve known failures",
-      "status": "in_progress",
+      "status": "done",
       "acceptance": [
-        "Run checks, fix failures, and implement the next planned feature"
+        "Run checks, fix failures, and implement the next planned feature",
+        "Fixed SQLAlchemy reserved attribute name conflict (metadata -> signal_metadata)",
+        "Fixed Pydantic response model to correctly expose metadata via validation alias"
+      ],
+      "implementation": [
+        "backend/app/models/signal.py",
+        "backend/app/services/signal_service.py"
+      ],
+      "tests": [
+        "backend/tests/test_signal_service.py",
+        "backend/tests/test_signals_api.py"
+      ]
+    },
+    {
+      "id": "next-feature",
+      "title": "Implement frontend signal visualization",
+      "status": "planned",
+      "acceptance": [
+        "React frontend with signal generation form",
+        "Time-domain and frequency-domain charts using Chart.js or Recharts",
+        "Signal list with pagination",
+        "Filter configuration UI"
       ],
       "implementation": [],
       "tests": []
