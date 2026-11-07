@@ -167,3 +167,7 @@ docker compose exec backend cp ./backup/signal_forge_20240101.db /app/backend/si
 ## License
 
 MIT License — Copyright (c) 2024 Alan Vo <alanvo@gmail.com>
+
+---
+
+Alan Vo · [alanvo.net](https://alanvo.net)

@@ -31,3 +31,6 @@ Acceptance:
 - Signal list with pagination
 - Filter configuration UI
 
+---
+
+Alan Vo · [alanvo.net](https://alanvo.net)

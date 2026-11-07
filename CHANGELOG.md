@@ -28,3 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker Compose deployment with Keycloak OIDC
 - SQLite database with SQLAlchemy async ORM
 - Pytest test suite for backend services and API
+
+---
+
+Alan Vo · [alanvo.net](https://alanvo.net)
