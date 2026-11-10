@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "continue-implementation",
+  "current_feature": "next-feature",
   "features": [
     {
       "id": "continue-implementation",
@@ -23,15 +23,24 @@
     {
       "id": "next-feature",
       "title": "Implement frontend signal visualization",
-      "status": "planned",
+      "status": "in_progress",
       "acceptance": [
         "React frontend with signal generation form",
         "Time-domain and frequency-domain charts using Chart.js or Recharts",
         "Signal list with pagination",
         "Filter configuration UI"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "frontend/src/components/SignalForm.tsx",
+        "frontend/src/components/SignalChart.tsx",
+        "frontend/src/components/SpectrumChart.tsx",
+        "frontend/src/components/SignalList.tsx",
+        "frontend/src/components/FilterPanel.tsx",
+        "frontend/src/App.tsx"
+      ],
+      "tests": [
+        "frontend/src/App.test.tsx"
+      ]
     }
   ]
 }
