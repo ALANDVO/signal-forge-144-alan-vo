@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-continue-implementation
+next-feature
 
 ## Roadmap
 
@@ -23,13 +23,17 @@ Tests: `backend/tests/test_signal_service.py`, `backend/tests/test_signals_api.p
 
 ### next-feature — Implement frontend signal visualization
 
-Status: planned
+Status: in_progress
 
 Acceptance:
 - React frontend with signal generation form
 - Time-domain and frequency-domain charts using Chart.js or Recharts
 - Signal list with pagination
 - Filter configuration UI
+
+Implementation: `frontend/src/components/SignalForm.tsx`, `frontend/src/components/SignalChart.tsx`, `frontend/src/components/SpectrumChart.tsx`, `frontend/src/components/SignalList.tsx`, `frontend/src/components/FilterPanel.tsx`, `frontend/src/App.tsx`
+
+Tests: `frontend/src/App.test.tsx`
 
 ---
 
