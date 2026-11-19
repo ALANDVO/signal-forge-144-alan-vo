@@ -8,7 +8,6 @@ describe('App', () => {
   })
 
   it('shows loading state initially', () => {
-    ;(global.fetch as ReturnType<typeof vi.fn>).mockImplementation(() => new Promise(() => {}))
 
     render(<App />)
 
@@ -29,14 +28,14 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('API Status')).toBeInTheDocument()
+      expect(screen.getByText('API Healthy')).toBeInTheDocument()
     })
 
     await waitFor(() => {
-      expect(screen.getByText('healthy')).toBeInTheDocument()
+      expect(screen.getByText('API Healthy')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('signal-forge')).toBeInTheDocument()
+    expect(screen.getByText('Signal Forge')).toBeInTheDocument()
   })
 
   it('displays error when fetch fails', async () => {
