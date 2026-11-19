@@ -55,3 +55,4 @@ docker-compose.override.yml
 .env.local
 .env.*.local
 **/data/media/
+.venv*/
