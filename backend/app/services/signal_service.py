@@ -56,23 +56,23 @@ class SignalService:
         if signal_create.signal_type == "sine":
             if signal_create.frequency is None:
                 raise ValueError("Frequency required for sine wave")
-            data = signal_create.amplitude * np.sin(
+            data = (signal_create.amplitude * np.sin(
                 2 * np.pi * signal_create.frequency * t + signal_create.phase
-            ).tolist()
+            )).tolist()
         elif signal_create.signal_type == "square":
             if signal_create.frequency is None:
                 raise ValueError("Frequency required for square wave")
-            data = signal_create.amplitude * np.sign(
+            data = (signal_create.amplitude * np.sign(
                 np.sin(2 * np.pi * signal_create.frequency * t + signal_create.phase)
-            ).tolist()
+            )).tolist()
         elif signal_create.signal_type == "sawtooth":
             if signal_create.frequency is None:
                 raise ValueError("Frequency required for sawtooth wave")
-            data = signal_create.amplitude * 2 * (
+            data = (signal_create.amplitude * 2 * (
                 (t * signal_create.frequency + signal_create.phase / (2 * np.pi)) % 1 - 0.5
-            ).tolist()
+            )).tolist()
         elif signal_create.signal_type == "noise":
-            data = signal_create.amplitude * np.random.normal(0, 1, num_samples).tolist()
+             data = (signal_create.amplitude * np.random.normal(0, 1, num_samples)).tolist()
         elif signal_create.signal_type == "custom":
             if not signal_create.data:
                 raise ValueError("Data required for custom signal")
@@ -112,13 +112,13 @@ class SignalService:
 
         await self.session.commit()
         await self.session.refresh(signal)
-        return SignalResponse(signal)
+        return SignalResponse.model_validate(signal)
 
     async def get_signal(self, signal_id: int) -> Optional[SignalResponse]:
         """Retrieve a signal by ID."""
         result = await self.session.execute(select(Signal).where(Signal.id == signal_id))
         signal = result.scalar_one_or_none()
-        return SignalResponse(signal) if signal else None
+        return SignalResponse.model_validate(signal) if signal else None
 
     async def list_signals(self, skip: int = 0, limit: int = 100) -> list[SignalResponse]:
         """List signals with pagination."""
@@ -126,7 +126,7 @@ class SignalService:
             select(Signal).offset(skip).limit(limit).order_by(Signal.created_at.desc())
         )
         signals = result.scalars().all()
-        return [SignalResponse(s) for s in signals]
+        return [SignalResponse.model_validate(s) for s in signals]
 
     async def compute_fft(self, signal_id: int) -> SignalResponse:
         """Compute FFT of a signal."""
@@ -185,14 +185,14 @@ class SignalService:
 
         await self.session.commit()
         await self.session.refresh(fft_signal)
-        return SignalResponse(fft_signal)
+        return SignalResponse.model_validate(fft_signal)
 
     async def apply_filter(
         self,
         signal_id: int,
         filter_type: str,
         cutoff_freq: float,
-        order: int,
+        order: int = 4,
     ) -> SignalResponse:
         """Apply a digital filter to a signal."""
         start_time = time.perf_counter()
@@ -264,7 +264,7 @@ class SignalService:
 
         await self.session.commit()
         await self.session.refresh(filtered_signal)
-        return SignalResponse(filtered_signal)
+        return SignalResponse.model_validate(filtered_signal)
 
     async def convolve(self, signal_id: int, kernel_id: int) -> SignalResponse:
         """Convolve two signals."""
@@ -324,13 +324,13 @@ class SignalService:
 
         await self.session.commit()
         await self.session.refresh(convolved_signal)
-        return SignalResponse(convolved_signal)
+        return SignalResponse.model_validate(convolved_signal)
 
     async def get_operations(self, signal_id: int) -> list[SignalOperationResponse]:
         """Get operation history for a signal."""
         result = await self.session.execute(
-            select(SignalOperation).where(SignalOperation.signal_id == signal_id).order_by(SignalOperation.created_at)
+            select(SignalOperation).where(SignalOperation.signal_id == signal_id).order_by(SignalOperation.created_at.desc())
         )
         operations = result.scalars().all()
-        return [SignalOperationResponse(op) for op in operations]
+        return [SignalOperationResponse.model_validate(op) for op in operations]
 
