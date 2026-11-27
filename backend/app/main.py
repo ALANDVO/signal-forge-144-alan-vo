@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(signals.router, prefix="/api/v1", tags=["signals"])
+    app.include_router(health.router, prefix="/api/v1", tags=["health"])
 
     return app
 
